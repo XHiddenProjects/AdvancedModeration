@@ -1,0 +1,26 @@
+name: AdvancedModeration
+main: AdminBuilder1\AdvancedModeration\advancedmoderation
+description: A better way to moderatate your server
+api: 3.22.0
+version: 1.0
+  
+commands:
+    advancedmod:
+        description: "A very high tech moderatation system"
+        aliases: [admod]
+        permissions: advancedmod.cmd
+
+permissions:
+    advancedmod:
+        description: "Load all the advanced moderatation codes"
+        aliases: ["admod"]
+        children:
+            advancedmod.cmd:
+                advancedmod.cmd.help:
+                    description: "Gives you all the commands"
+                    usage: /advancedmod help
+                    default: op
+                advancemod.cmd.annouce:
+                    description: "Can send out annoucmentments"
+                    usage: /advancedmod annouce <string>
+                    default: op
