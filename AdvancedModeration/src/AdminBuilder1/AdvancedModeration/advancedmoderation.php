@@ -11,14 +11,17 @@ use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 
 use pocketmine\event\Listener;
-use pocketmine\event\player\PlayerJoinEvent;
-use pocketmine\event\player\PlayerChatEvent;
 
 use pocketmine\utils\TextFormat;
-
-
+# commands
+use AdminBuilder1\AdvancedModeration\command\help;
 
 class AdvancedModeration extends PluginBase implements Listener {
+	public $mainargs = [
+	"help",
+	"annouce"
+	];
+	
 	
 	public function onEnable(){
 		$this->getServer()->getPluginManager()->registerEvents($this,$this);
@@ -28,53 +31,26 @@ class AdvancedModeration extends PluginBase implements Listener {
 		$this->getLogger()->info("AdvancedModerator is disabled");
 	}
 
-	public function onCommand(CommandSender $sender, Command $cmd, string $label, array $agrs) : bool{
+	public function onCommand(CommandSender $sender, Command $cmd, string $label, array $args) : bool{
+		
 		 switch($cmd->getName()) {
 			 # cmd
-			case "advancemod":
-			case "admod":
-		
+			case "advancedmod":
+			case "advmod":
 					# default
-				if($sender->hasPermission("advancemod.cmd")){
-				if($sender instanceof Player){
-						$sender->sendMessage("try using /[advancemod|admod] <help>".$agrs);
-					}else{
-						$sender->sendMessage("Cannot use it console");
-					}
-			}else {
-				$sender->sendMessage("You do not have permission");
+			if($sender instanceof Player){
+				if(!isset($args[0])){
+					 if (!$sender->hasPermission("advancedmod.cmd")) {
+                            $sender->sendMessage($this->noperm);
+                            return true;
+                        } else {
+                            $sender->sendMessage("Please type '/advancedmod|advmod help'.");
+                            return true;
+                        }
+				
+				}
 			}
-			break;
-			break;
-			# cmd_1
-			case "advancemod.help":
-			case "admod.help":
-					
-				if($sender->hasPermission("advancemod.cmd.help")){
-				if($sender instanceof Player){
-						$sender->sendMessage("Here are some commands\n-help\n-annouce");
-					}else{
-						$sender->sendMessage("Cannot use it console");
-					}
-			}else {
-				$sender->sendMessage("You do not have permission");
-			}
-			
-			break;
-			break;
-			# cmd_2
-			case "advancemod.annouce":
-			case "admod.annouce":
-		
-			if($sender->hasPermission("advancemod.cmd.annouce")){
-				if($sender instanceof Player){
-						$sender->sendMessage("test");
-					}else{
-						$sender->sendMessage("Cannot use it console");
-					}
-			}else {
-				$sender->sendMessage("You do not have permission");
-			}
+				
 			break;
 			break;
 		
