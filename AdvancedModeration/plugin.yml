@@ -12,6 +12,11 @@ commands:
         
 permissions:
    advancedmod.command:
+    description: "starts the AdvancedModeration commands"
     default: op
    advancedmod.help:
+    description: "list all the commands of AdvancedModeration"
+    default: op
+   advancedmod.announce:
+    description: "Shares a public message to everyone"
     default: op
