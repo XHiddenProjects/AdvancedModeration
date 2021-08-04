@@ -1,13 +1,14 @@
 name: AdvancedModeration
 main: AdminBuilder1\AdvancedModeration\advancedmoderation
 description: A better way to moderatate your server
+website: https://github.com/surveybuilderteams/AdvancedModerator
 api: [3.22.0, 3.22.1]
-version: 1.0
+version: 1.0.1
   
 commands:
     advancedmod:
         description: "A very high tech moderatation system"
-        usage: "/advancedmod [args]..."
+        usage: "/advancedmod help"
         aliases: [advmod]
         
 permissions:
@@ -19,4 +20,19 @@ permissions:
     default: op
    advancedmod.announce:
     description: "Shares a public message to everyone"
+    default: op
+   advancedmod.pmsg:
+    description: "Sends private message to a player"
+    default: op
+   advancedmod.getIP:
+    description: "Grabs IP address from user"
+    default: op
+   advancedmod.gm:
+    description: "Sets own gamemode"
+    default: op
+   advancedmod.gmall:
+    description: "Sets everyone gamemode"
+    default: op
+   advancedmod.tp:
+    description: "teleports to a player or coords"
     default: op

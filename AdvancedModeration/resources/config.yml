@@ -1,1 +1,52 @@
-execute: true
+---
+# created by AdminBuilder1
+
+# tag name
+
+# Op's only
+username: administrator
+#encode BASE64 username/messages
+encode-username: false
+encode-messages: false
+
+version: 1 # do not change
+
+# messages
+announce: true
+pmsg: true
+# ban
+ban: true # /advancedmod ban <player> <reason>
+banlist: true # /advancedmod banlist
+tban: true # /advancedmod tban <player> <expire> <reason>
+banall: true # /advancedmod banall <reason>
+tbanall: true # /advancedmod tbanall <expire> <reason>
+# kick
+kick: true # /advancedmod kick <player> <reason>
+kickall: true # /advancedmod kickall <reason>
+# mute
+mute: true # /advancedmod mute <player>
+mutelist: true # /advancedmod mutelist
+tmute: true # /advancedmod tmute <player> <expire>
+muteall: true # /advancedmod muteall
+tmuteall: true # /advancedmod tmuteall <expire>
+unmute: true # /advancedmod unmute <player>
+unmuteall: true # /advancedmod unmuteall
+# op
+op: true # /advancedmod op <player>
+opall: true # /advancedmod opall
+deop: true # /advancedmod deop <player>
+deopall: true # /advancedmod deopall
+#vanish
+vanish: true # /advancedmod vanish <show|status|hide>
+#gamemode
+gamemode: true # /advancedmod gm <mode> <player>
+gamemodeall: true # /advancedmod gm <gamemode>
+#teleport
+teleport: true # /advancedmod tpto <player>
+# getStuff
+getIP: true # /advancedmod getIP <username>
+
+#enter username to bypass any kick/ban all 
+by-pass-op:
+    - [username]
+...
