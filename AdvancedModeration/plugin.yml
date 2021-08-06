@@ -3,7 +3,7 @@ main: AdminBuilder1\AdvancedModeration\advancedmoderation
 description: A better way to moderatate your server
 website: https://github.com/surveybuilderteams/AdvancedModerator
 api: [3.22.0, 3.22.1]
-version: 1.0.1
+version: 1.0.2
   
 commands:
     advancedmod:
@@ -35,4 +35,16 @@ permissions:
     default: op
    advancedmod.tp:
     description: "teleports to a player or coords"
+    default: op
+   advancedmod.kick:
+    description: "kicks a player"
+    default: op
+   advancedmod.kickall:
+    description: "kicks all player"
+    default: op
+   advancedmod.vanish:
+    description: "hides from users"
+    default: op
+   advancedmod.fly:
+    description: "allows you to fly"
     default: op

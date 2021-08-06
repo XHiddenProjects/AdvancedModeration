@@ -11,8 +11,13 @@ use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 
 use pocketmine\event\Listener;
+//use pocketmine\event\player\PlayerJoinEvent;
 
 use pocketmine\utils\TextFormat as C;
+
+use pocketmine\entity\Entity;
+use pocketmine\inventory\BaseInventory;
+use pocketmine\item\Item;
 # commands
 use AdminBuilder1\AdvancedModeration\command\help;
 
@@ -29,9 +34,11 @@ class AdvancedModeration extends PluginBase implements Listener {
 	public function onDisabled(){
 		$this->getLogger()->info(C::RED . "AdvancedModerator is disabled");
 	}
+	
+# commands
+
 
 	public function onCommand(CommandSender $sender, Command $cmd, string $label, array $args) : bool{
-		
 		 switch($cmd->getName()) {
 			 # cmd
 			case "advancedmod":
@@ -39,6 +46,7 @@ class AdvancedModeration extends PluginBase implements Listener {
 //if($this->getConfig()->get("execute") === true){
 			# default
 			if($sender instanceof Player){
+
 				$config = $this->getConfig();
 				$username = $config->get("username");
 				# encode
@@ -71,8 +79,11 @@ foreach($config->get("by-pass-op") as $bypass){
 					}
 					array_shift($args);
 					if($args[0] === "1"){
-					$sender->sendMessage(C::GREEN . "List of commands(1/1):" . C::WHITE . "\n- help <pg>\n- annouce <msg>\n- pmsg <player> <msg>\n- getIP <player>\n- gm <mode> <target>\n- gmall <mode>\n- tpto <player>");
+					$sender->sendMessage(C::GREEN . "List of commands(1/2):" . C::WHITE . "\n- help <pg>\n- annouce <msg>\n- pmsg <player> <msg>\n- getIP <player>\n- gm <mode> <target>\n- gmall <mode>\n- tpto <player>");
 					return true;	
+					}
+					if($args[0] === "2"){
+						$sender->sendMessage(C::GREEN . "List of commands(2/2):" . C::WHITE . "\n- kick <player> <reason>\n- kickall <reason>\n- vanish <show|hide|visable|hidden>\n- fly <enable|diabled>");
 					}
 					
 					
@@ -227,6 +238,116 @@ foreach($config->get("by-pass-op") as $bypass){
 						
 					}
 				}
+			#kick
+				if(count($args) >= 1 && $args[0] === "kick" && $config->get("kick") === true){
+					if(!$sender->hasPermission("advancedmod.kick")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+					}else{
+						if(count($args) < 2){
+							$sender->sendMessage(C::RED . "You must include player and reason");
+						return true;
+						}
+						array_shift($args);
+						if($this->getServer()->getPlayer($args[0])){
+							$player = $this->getServer()->getPlayer($args[0]);
+							array_shift($args);
+							$reason = implode(" ", $args);
+							$player->kick($reason);
+						}else{
+							$sender->sendMessage(C::RED . "Player not found!");
+								return true;
+						}
+					}
+				}
+			#kickall
+				if(count($args) >= 1 && $args[0] === "kickall" && $config->get("kickall") === true){
+					if(!$sender->hasPermission("advancedmod.kickall")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+					}else{
+						if(count($args) < 1){
+						$sender->sendMessage(C::RED . "You must include reason");
+						return true;
+						}
+						array_shift($args);
+						foreach($this->getServer()->getOnlinePlayers() as $p){
+							if($p->getName() !== $bypass){
+							$reason = implode(" ", $args);
+							$p->kick($reason);
+							return true;
+							}else{
+								$renameArgs = explode(" ", $p->getName());
+								$sender->sendMessage("Can't update " . C::GRAY . implode(",", $renameArgs) . " do to bypass");
+								return true;
+							}
+							
+						}
+					}
+				}
+			#vanish
+			if(count($args) >= 1 && $args[0] === "vanish" && $config->get("vanish") === true){
+					if(!$sender->hasPermission("advancedmod.vanish")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+					}else{
+						if(count($args)<2){
+						$sender->sendMessage(C::RED . "You must include <show|hide|status>");
+						return true;
+						}
+						array_shift($args);
+						if($args[0] === "show" || $args[0] === "visable"){
+							foreach($this->getServer()->getOnlinePlayers() as $onlineplayers){
+								$onlineplayers->showPlayer($sender);
+							}
+							# effect user
+							$sender->setDataFlag(Entity::DATA_FLAGS, Entity::DATA_FLAG_INVISIBLE, false);
+                            $sender->setNameTagVisible(true);
+							$sender->setGamemode(0);
+							
+                            
+							
+							$sender->sendMessage("You are now: " . C::GREEN . "visable");
+							return true;
+						}
+						if($args[0] === "hide" || $args[0] === "hidden"){
+							foreach($this->getServer()->getOnlinePlayers() as $onlineplayers){
+								$onlineplayers->hidePlayer($sender);
+							}
+							# effect user
+							  $sender->setDataFlag(Entity::DATA_FLAGS, Entity::DATA_FLAG_INVISIBLE, true);
+							  $sender->setNameTagVisible(false);
+							  $sender->setGamemode(1);
+							 
+						
+							 $sender->getInventory()->clearAll();
+							$sender->getArmorInventory()->clearAll();
+							$sender->sendMessage("You are now: " . C::RED . "hidden");
+							return true;
+						}
+					}
+			}
+			# fly
+			if(count($args) >= 1 && $args[0] === "fly"){
+				if(!$sender->hasPermission("advancedmod.fly")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+					}else{
+						if(count($args) < 2){
+							$sender->sendMessage(C::RED . "You must include <enable|disabled>");
+						return true;
+						}
+						array_shift($args);
+						if($args[0] === "enable"){
+							$sender->setAllowFlight(true);
+							$sender->sendMessage("You can fly now");
+						}
+						if($args[0] === "disabled"){
+							$sender->setAllowFlight(false);
+							$sender->sendMessage("You can't fly now");
+						}
+					}
+			}
 				
 				
 			# GET info
