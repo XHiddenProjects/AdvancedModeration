@@ -12,16 +12,23 @@ use pocketmine\command\CommandSender;
 
 use pocketmine\event\Listener;
 //use pocketmine\event\player\PlayerJoinEvent;
+use pocketmine\event\player\PlayerChatEvent;
 
 use pocketmine\utils\TextFormat as C;
 
 use pocketmine\entity\Entity;
 use pocketmine\inventory\BaseInventory;
 use pocketmine\item\Item;
+
+use pocketmine\permission\PermissibleBase;
+
 # commands
 use AdminBuilder1\AdvancedModeration\command\help;
 
 class AdvancedModeration extends PluginBase implements Listener {	
+	
+	public $muteList = [];
+	public $mutedPlayers = [];
 	
 	public function onEnable(){
 		@mkdir($this->getDataFolder());
@@ -79,13 +86,18 @@ foreach($config->get("by-pass-op") as $bypass){
 					}
 					array_shift($args);
 					if($args[0] === "1"){
-					$sender->sendMessage(C::GREEN . "List of commands(1/2):" . C::WHITE . "\n- help <pg>\n- annouce <msg>\n- pmsg <player> <msg>\n- getIP <player>\n- gm <mode> <target>\n- gmall <mode>\n- tpto <player>");
+					$sender->sendMessage(C::GREEN . "List of commands(1/4):" . C::WHITE . "\n- help <pg>\n- annouce <msg>\n- pmsg <player> <msg>\n- getIP <player>\n- gm <mode> <target>\n- gmall <mode>\n- tpto <player>");
 					return true;	
 					}
 					if($args[0] === "2"){
-						$sender->sendMessage(C::GREEN . "List of commands(2/2):" . C::WHITE . "\n- kick <player> <reason>\n- kickall <reason>\n- vanish <show|hide|visable|hidden>\n- fly <enable|diabled>");
+						$sender->sendMessage(C::GREEN . "List of commands(2/4):" . C::WHITE . "\n- kick <player> <reason>\n- kickall <reason>\n- vanish <show|hide|visable|hidden>\n- fly <enable|diabled>\n- mute <player>\n- tmute <player> <time(seconds)>\n- mutelist");
 					}
-					
+					if($args[0] === "3"){
+						$sender->sendMessage(C::GREEN . "List of commands(3/4)" . C::WHITE . "\n- unmute <player>\n- muteall\n- tmuteall <time(seconds)>\n- unmuteall\n- op <player>\n- opall\n- deop <player>");
+					}
+					if($args[0] === "4"){
+						$sender->sendMessage(C::GREEN . "List of commands(4/4)" . C::WHITE . "\n- deopall");
+					}
 					
 				}
 			}
@@ -199,7 +211,7 @@ foreach($config->get("by-pass-op") as $bypass){
 								if($args[0] === "0" || $args[0] === "1" || $args[0] === "2" || $args[0] === "3"){
 									$p->setGamemode($args[0]);
 									$renameArgs = explode(" ", $p->getName());
-									$sender->sendMessage("Successfully changed everyones gamemode " . C::GRAY . implode(",", $renameArgs));
+									$sender->sendMessage(C::GREEN . "Successfully changed everyones gamemode " . C::GRAY . implode(",", $renameArgs));
 									return true;
 								}else{
 								$sender->sendMessage(C::RED . "invalid gamemode");
@@ -207,7 +219,7 @@ foreach($config->get("by-pass-op") as $bypass){
 								}
 							}else{
 								$renameArgs = explode(" ", $p->getName());
-								$sender->sendMessage("Can't update " . C::GRAY . implode(",", $renameArgs) . " do to bypass");
+								$sender->sendMessage(C::RED . "Can't update " . C::GRAY . implode(",", $renameArgs) . C::RED . " do to bypass");
 								return true;
 							}
 						}
@@ -229,7 +241,7 @@ foreach($config->get("by-pass-op") as $bypass){
 							if($this->getServer()->getPlayer($args[0])){
 								$player = $this->getServer()->getPlayer($args[0]);
 								$sender->teleport($player->getPosition());
-								$sender->sendMessage("Successfully teleport to " . C::GRAY . $player->getName());
+								$sender->sendMessage(C::GREEN . "Successfully teleport to " . C::GRAY . $player->getName());
 								return true;
 							}else{
 								$sender->sendMessage(C::RED . "Player not found!");
@@ -278,7 +290,7 @@ foreach($config->get("by-pass-op") as $bypass){
 							return true;
 							}else{
 								$renameArgs = explode(" ", $p->getName());
-								$sender->sendMessage("Can't update " . C::GRAY . implode(",", $renameArgs) . " do to bypass");
+								$sender->sendMessage(C::RED . "Can't update " . C::GRAY . implode(",", $renameArgs) . C::RED . " do to bypass");
 								return true;
 							}
 							
@@ -340,16 +352,310 @@ foreach($config->get("by-pass-op") as $bypass){
 						array_shift($args);
 						if($args[0] === "enable"){
 							$sender->setAllowFlight(true);
-							$sender->sendMessage("You can fly now");
+							$sender->sendMessage(C::GREEN . "You can fly now");
 						}
 						if($args[0] === "disabled"){
 							$sender->setAllowFlight(false);
-							$sender->sendMessage("You can't fly now");
+							$sender->sendMessage(C::RED . "You can't fly now");
 						}
 					}
 			}
-				
-				
+			# mute
+			if(count($args) >= 1 && $args[0] === "mute" && $config->get("mute") === true){
+					if(!$sender->hasPermission("advancedmod.mute")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+			}else{
+				if(count($args) < 2){
+					$sender->sendMessage(C::RED . "You must have a player");
+						return true;
+				}
+				array_shift($args);
+				$player = $args[0];
+				if($this->getServer()->getPlayer($player)){
+					if(isset($this->muteList[$player])){
+						$sender->sendMessage(C::RED . "Player is already in muteList");
+						return true;
+					}else{
+						 $this->muteList[$player] = -1;
+						 $this->mutedPlayers[$player] = $player;
+						$sender->sendMessage(C::GREEN . "Player has been muted");
+					}
+				}else{
+				$sender->sendMessage(C::RED . "Player not found!");
+				return true;
+				}
+				}
+			}
+			# muteall
+			if(count($args) >= 1 && $args[0] === "muteall" && $config->get("muteall") === true){
+					if(!$sender->hasPermission("advancedmod.muteall")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+			}else{
+				foreach($this->getServer()->getOnlinePlayers() as $p){
+					if($p->getName() !== $bypass){
+						if(isset($this->muteList[$p->getName()])){
+						$sender->sendMessage(C::RED . "Player is already in muteList");
+						return true;
+						}else{
+							$this->muteList[$p->getName()] = -1;
+						 $this->mutedPlayers[$p->getName()] = $p->getName();
+						$sender->sendMessage(C::GREEN . "Player has been muted");
+						}
+					}else{
+					$renameArgs = explode(" ", $p->getName());
+					$sender->sendMessage(C::RED . "Can't update " . C::GRAY . implode(",", $renameArgs) . C::RED . " do to bypass");
+					return true;
+				}
+			}
+			}
+		}
+			# tmute
+			if(count($args) >= 1 && $args[0] === "tmute" && $config->get("tmute") === true){
+					if(!$sender->hasPermission("advancedmod.tmute")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+			}else{	
+			if(count($args) < 3){
+				$sender->sendMessage(C::RED . "You must include player and time");
+				return true;
+			}
+					array_shift($args);
+				$player = $args[0];
+				$expire = $args[1]; //in seconds
+				if($this->getServer()->getPlayer($player)){
+					if(isset($this->muteList[$player])){
+						$sender->sendMessage(C::RED . "Player is already in muteList");
+						return true;
+					}else{
+						if(!is_numeric($expire)){
+					$sender->sendMessage(C::RED . "Time must be a number(seconds)");
+					return true;
+					}else{
+						 $this->muteList[$player] = time() + $expire;
+						 $this->mutedPlayers[$player] = $p->getName();;
+						$sender->sendMessage(C::GREEN . "Player has been muted");
+						return true;
+					}
+				}		
+			}else{
+				$sender->sendMessage(C::RED . "Player not found!");
+				return true;
+				}
+			}
+		}
+	# tmuteall
+	if(count($args) >= 1 && $args[0] === "tmuteall" && $config->get("tmuteall") === true){
+					if(!$sender->hasPermission("advancedmod.tmuteall")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+					}else{
+						foreach($this->getServer()->getOnlinePlayers() as $p){
+							if($p->getName() !== $bypass){
+								array_shift($args);
+								if(count($args) < 1){
+								$sender->sendMessage(C::RED . "You must have a time");
+								return true;
+								}
+								$expire = $args[0];
+								if(!isset($this->muteList[$p->getName()])){
+									if(!is_numeric($expire)){
+									$sender->sendMessage(C::RED . "Time must be a number(seconds)");
+									return true;
+									}else{
+									$this->muteList[$p->getName()] = time() + $expire;
+									$this->mutedPlayers[$p->getName()] = $p->getName();
+									$sender->sendMessage(C::GREEN . "Player has been muted");
+									return true;
+									}
+								}else{
+								$sender->sendMessage(C::RED . "Player is already in muteList");
+								return true;
+								}
+							}else{
+								$renameArgs = explode(" ", $p->getName());
+					$sender->sendMessage("Can't update " . C::GRAY . implode(",", $renameArgs) . " do to bypass");
+					return true;
+							}
+						}
+					}
+				}
+	#unmute
+		if(count($args) >= 1 && $args[0] === "unmute" && $config->get("unmute") === true){
+					if(!$sender->hasPermission("advancedmod.unmute")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+		}else{	
+			if(count($args) < 2){
+				$sender->sendMessage(C::RED . "You must have a player");
+						return true;
+			}
+			array_shift($args);
+			$player = $args[0];
+			if($this->getServer()->getPlayer($player)){
+				if(isset($this->muteList[$player])){
+					unset($this->muteList[$player]);
+					unset($this->mutedPlayers[$player]);
+					$sender->sendMessage(C::GREEN . "Player has been unmuted");
+					return true;
+				}else{
+					$sender->sendMessage(C::RED . "Player is not in the muteList");
+					return true;
+				}
+			}else{
+				$sender->sendMessage(C::RED . "Player not found!");
+				return true;
+			}
+		}
+	}
+	#unmuteall
+		if(count($args) >= 1 && $args[0] === "unmuteall" && $config->get("unmuteall") === true){
+					if(!$sender->hasPermission("advancedmod.unmuteall")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+		}else{
+			if(count($this->muteList) <= 0){
+				$sender->sendMessage(C::RED . "No players are muted");
+				return true;
+			}
+			foreach($this->muteList as $muted){
+				foreach($this->mutedPlayers as $mutedP){
+					unset($muted);
+					unset($mutedP);
+					$sender->sendMessage(C::GREEN . "Successfully removed all Users from muteList");
+					return true;
+				}
+			}
+		}
+	}
+	#muteList
+		if(count($args) >= 1 && $args[0] === "mutelist" && $config->get("mutelist") === true){
+					if(!$sender->hasPermission("advancedmod.mutelist")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+		}else{	
+		if(count($this->muteList) <= 0){
+			$sender->sendMessage(C::RED . "No muted players");
+				return true;
+		}else{
+			foreach($this->mutedPlayers as $mplayer){
+					$sender->sendMessage("List of Muted players:\n" . $mplayer . ",");
+				return true;
+			}
+		}
+			
+		}
+	}
+#op
+	if(count($args) >= 1 && $args[0] === "op" && $config->get("op") === true){
+					if(!$sender->hasPermission("advancedmod.op")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+	}else{	
+		if(count($args) < 2){
+			$sender->sendMessage(C::RED . "You must include a player");
+			return true;
+		}
+		array_shift($args);
+		$player = $args[0];
+		if($this->getServer()->getPlayer($player)){
+			$noOpPly = $this->getServer()->getPlayer($player);
+			if($noOpPly->isOp()){
+			$sender->sendMessage(C::RED . "Player is already an op");
+			return true;
+			}else{
+				$noOpPly->setOp(true);
+				$sender->sendMessage(C::GREEN . "Player is now Opped");
+				$noOpPly->sendMessage(C::GREEN . "You are now Opped");
+				return true;
+			}
+		}else{
+			$sender->sendMessage(C::RED . "Player not found!");
+			return true;
+		}
+		
+	}
+}
+#deop
+	if(count($args) >= 1 && $args[0] === "deop" && $config->get("deop") === true){
+					if(!$sender->hasPermission("advancedmod.deop")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+	}else{	
+		if(count($args) < 2){
+			$sender->sendMessage(C::RED . "You must include a player");
+			return true;
+		}
+		array_shift($args);
+		$player = $args[0];
+		if($this->getServer()->getPlayer($player)){
+			$noOpPly = $this->getServer()->getPlayer($player);
+			if(!$noOpPly->isOp()){
+			$sender->sendMessage(C::RED . "Player is not an Op");
+			return true;
+			}else{
+				$noOpPly->setOp(false);
+				$sender->sendMessage(C::GREEN . "Player is now Deopped");
+				$noOpPly->sendMessage(C::RED . "You are now Deopped");
+				return true;
+			}
+		}else{
+			$sender->sendMessage(C::RED . "Player not found!");
+			return true;
+		}
+		
+	}
+}
+#opall
+			if(count($args) >= 1 && $args[0] === "opall" && $config->get("opall") === true){
+					if(!$sender->hasPermission("advancedmod.opall")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+					}else{
+						foreach($this->getServer()->getOnlinePlayers() as $p){
+							if($p->getName() !== $bypass){
+								if($p->isOp()){
+								$sender->sendMessage(C::RED . $p->getName() . " is already opped" . ",");
+								return true;	
+								}else{
+									$p->setOp(true);
+									$sender->sendMessage(C::GREEN . "Successfully opped all players");
+									$p->sendMessage(C::GREEN . "You are now opped");
+								}
+							}else{
+								$renameArgs = explode(" ", $p->getName());
+					$sender->sendMessage("Can't update " . C::GRAY . implode(",", $renameArgs) . " do to bypass");
+					return true;
+							}
+						}
+					}
+			}
+#deopall
+	if(count($args) >= 1 && $args[0] === "deopall" && $config->get("deopall") === true){
+					if(!$sender->hasPermission("advancedmod.deopall")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+					}else{
+						foreach($this->getServer()->getOnlinePlayers() as $p){
+							if($p->getName() !== $bypass){
+								if(!$p->isOp()){
+								$sender->sendMessage(C::RED . $p->getName() . " is already deopped" . ",");
+								return true;	
+								}else{
+									$p->setOp(false);
+									$sender->sendMessage(C::GREEN . "Successfully deopped all players");
+									$p->sendMessage(C::RED . "You are now deopped");
+								}
+							}else{
+								$renameArgs = explode(" ", $p->getName());
+					$sender->sendMessage("Can't update " . C::GRAY . implode(",", $renameArgs) . " do to bypass");
+					return true;
+							}
+						}
+					}
+			}
+
 			# GET info
 			if(count($args) >= 1 && $args[0] === "getIP" && $config->get("getIP") === true){
 				if(!$sender->hasPermission("advancedmod.getIP")){
@@ -385,6 +691,32 @@ foreach($config->get("by-pass-op") as $bypass){
 		
 	}
 		return true;
+}
+	public function onChat(PlayerChatEvent $e){
+		$player = $e->getPlayer();
+		
+	if(isset($this->muteList[$player->getName()])){
+		//temp
+		if($this->muteList[$player->getName()] != -1){
+			$currentTime = time();
+			if($currentTime > $this->muteList[$player->getName()]){
+				unset($this->muteList[$player->getName()]);
+				return true;
+			}else{
+				$e->setCancelled();
+				$player->sendMessage(C::RED . "You have been muted");
+				return true;
+			}
+		}else{
+			//perment
+			$e->setCancelled();
+				$player->sendMessage(C::RED . "You have been muted");
+				return true;
+		}
+			
+		
+		}
 	}
 }
+
  

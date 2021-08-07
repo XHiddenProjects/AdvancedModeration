@@ -3,7 +3,7 @@ main: AdminBuilder1\AdvancedModeration\advancedmoderation
 description: A better way to moderatate your server
 website: https://github.com/surveybuilderteams/AdvancedModerator
 api: [3.22.0, 3.22.1]
-version: 1.0.2
+version: 1.0.3
   
 commands:
     advancedmod:
@@ -47,4 +47,37 @@ permissions:
     default: op
    advancedmod.fly:
     description: "allows you to fly"
+    default: op
+   advancedmod.mute:
+    description: "allows you to mute player"
+    default: op
+   advancedmod.tmute:
+    description: "allows you to temp. mute player"
+    default: op
+   advancedmod.unmute:
+    description: "allows you to unmute player"
+    default: op
+   advancedmod.mutelist:
+    description: "allows you to see listed muted players"
+    default: op
+   advancedmod.muteall:
+    description: "allows you to mute all players"
+    default: op
+   advancedmod.tmuteall:
+    description: "allows you to temp. mute all players"
+    default: op
+   advancedmod.unmuteall:
+    description: "allows you to unmute all players"
+    default: op
+   advancedmod.op:
+    description: "allows you to op users"
+    default: op
+   advancedmod.deop:
+    description: "allows you to deop users"
+    default: op
+   advancedmod.opall:
+    description: "allows you to op all users"
+    default: op
+   advancedmod.deopall:
+    description: "allows you to deop all users"
     default: op
