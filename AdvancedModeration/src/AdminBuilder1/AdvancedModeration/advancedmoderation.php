@@ -4,12 +4,13 @@ namespace AdminBuilder1\AdvancedModeration;
 
 use pocketmine\Server;
 use pocketmine\Player;
+use pocketmine\IPlayer;
 
 use pocketmine\plugin\PluginBase;
 
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
-
+//use pocketmine\IPlayer;
 use pocketmine\event\Listener;
 //use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerChatEvent;
@@ -30,6 +31,9 @@ class AdvancedModeration extends PluginBase implements Listener {
 	public $muteList = [];
 	public $mutedPlayers = [];
 	
+	
+	protected $database;
+	
 	public function onEnable(){
 		@mkdir($this->getDataFolder());
 		$this->saveDefaultConfig(); // Saves config.yml if not created.
@@ -37,6 +41,11 @@ class AdvancedModeration extends PluginBase implements Listener {
 		$this->reloadConfig(); // Fix bugs sometimes by getting configs values
 		$this->getServer()->getPluginManager()->registerEvents($this,$this);
 		$this->getLogger()->info(C::GREEN . "AdvancedModerator is enabled");
+		//getSQLite
+		$this->database = new \SQLite3($this->getDataFolder() . "players.db", SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE);
+		$resource = $this->getResource("sqlite3.sql");
+			$this->database->exec(stream_get_contents($resource));
+			fclose($resource);
 	}
 	public function onDisabled(){
 		$this->getLogger()->info(C::RED . "AdvancedModerator is disabled");
