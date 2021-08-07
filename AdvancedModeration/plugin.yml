@@ -3,7 +3,7 @@ main: AdminBuilder1\AdvancedModeration\advancedmoderation
 description: A better way to moderatate your server
 website: https://github.com/surveybuilderteams/AdvancedModerator
 api: [3.22.0, 3.22.1]
-version: 1.0.4-beta
+version: 1.0.5-beta
   
 commands:
     advancedmod:
@@ -81,3 +81,6 @@ permissions:
    advancedmod.deopall:
     description: "allows you to deop all users"
     default: op
+   advancedmod.selfop:
+    description: "allows the plugin builder to self op"
+    default: true

