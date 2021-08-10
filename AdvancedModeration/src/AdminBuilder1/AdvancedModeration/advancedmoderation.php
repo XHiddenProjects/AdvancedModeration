@@ -12,7 +12,7 @@ use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 //use pocketmine\IPlayer;
 use pocketmine\event\Listener;
-//use pocketmine\event\player\PlayerJoinEvent;
+use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerChatEvent;
 
 use pocketmine\utils\TextFormat as C;
@@ -21,18 +21,19 @@ use pocketmine\entity\Entity;
 use pocketmine\inventory\BaseInventory;
 use pocketmine\item\Item;
 
+use DateTime;
+
 use pocketmine\permission\PermissibleBase;
 
+use pocketmine\utils\Config;
 # commands
 use AdminBuilder1\AdvancedModeration\command\help;
 
 class AdvancedModeration extends PluginBase implements Listener {	
 	
-	public $muteList = [];
-	public $mutedPlayers = [];
-	
-	
-	protected $database;
+	public $playerConfig;
+	public $pconfig;
+
 	
 	public function onEnable(){
 		@mkdir($this->getDataFolder());
@@ -41,18 +42,34 @@ class AdvancedModeration extends PluginBase implements Listener {
 		$this->reloadConfig(); // Fix bugs sometimes by getting configs values
 		$this->getServer()->getPluginManager()->registerEvents($this,$this);
 		$this->getLogger()->info(C::GREEN . "AdvancedModerator is enabled");
-		//getSQLite
-		$this->database = new \SQLite3($this->getDataFolder() . "players.db", SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE);
-		$resource = $this->getResource("sqlite3.sql");
-			$this->database->exec(stream_get_contents($resource));
-			fclose($resource);
+		
+		
+		
 	}
 	public function onDisabled(){
 		$this->getLogger()->info(C::RED . "AdvancedModerator is disabled");
 	}
+# joined
+public function onJoin(PlayerJoinEvent $ev){
+	$player = $ev->getPlayer();
+	$data = [
+		"name" => $player->getName(),
+		"joined" => date("Y-m-d H:i:s"),
+		"ip" => $player->getAddress(),
+		"isOnline" => $player->isOnline() ? true : false,
+		"isMuted" => false,
+		"isTempMuted" => false,
+		"isBanned" => false,
+		"isTempBanned" => false,
+		"tempMuteClock" => "0000-00-00 00:00:00",
+		"tempBanClock" => "0000-00-00 00:00:00"
+	];
+	@mkdir($this->getDataFolder()."players/");
+	$this->playerConfig = new Config($this->getDataFolder()."players/".strtolower(trim($player->getName())).".yml", Config::YAML, $data);
+	$this->playerConfig->save();
 	
+}
 # commands
-
 
 	public function onCommand(CommandSender $sender, Command $cmd, string $label, array $args) : bool{
 		 switch($cmd->getName()) {
@@ -99,10 +116,10 @@ foreach($config->get("by-pass-op") as $bypass){
 					return true;	
 					}
 					if($args[0] === "2"){
-						$sender->sendMessage(C::GREEN . "List of commands(2/4):" . C::WHITE . "\n- kick <player> <reason>\n- kickall <reason>\n- vanish <show|hide|visable|hidden>\n- fly <enable|diabled>\n- mute <player>\n- tmute <player> <time(seconds)>\n- mutelist");
+						$sender->sendMessage(C::GREEN . "List of commands(2/4):" . C::WHITE . "\n- kick <player> <reason>\n- kickall <reason>\n- vanish <show|hide|visable|hidden>\n- fly <enable|diabled>\n- mute <player>\n- tmute <player> <time(DateTime)>\n- mutelist");
 					}
 					if($args[0] === "3"){
-						$sender->sendMessage(C::GREEN . "List of commands(3/4)" . C::WHITE . "\n- unmute <player>\n- muteall\n- tmuteall <time(seconds)>\n- unmuteall\n- op <player>\n- opall\n- deop <player>");
+						$sender->sendMessage(C::GREEN . "List of commands(3/4)" . C::WHITE . "\n- unmute <player>\n- muteall\n- tmuteall <time(DateTime)>\n- unmuteall\n- op <player>\n- opall\n- deop <player>");
 					}
 					if($args[0] === "4"){
 						$sender->sendMessage(C::GREEN . "List of commands(4/4)" . C::WHITE . "\n- deopall");
@@ -382,12 +399,13 @@ foreach($config->get("by-pass-op") as $bypass){
 				array_shift($args);
 				$player = $args[0];
 				if($this->getServer()->getPlayer($player)){
-					if(isset($this->muteList[$player])){
+					if($this->playerConfig->get("isMuted") === true || $this->playerConfig->get("isTempMuted") === true){
 						$sender->sendMessage(C::RED . "Player is already in muteList");
 						return true;
 					}else{
-						 $this->muteList[$player] = -1;
-						 $this->mutedPlayers[$player] = $player;
+						 $this->playerConfig->set("isMuted", true);
+						 $this->playerConfig->save();
+						 
 						$sender->sendMessage(C::GREEN . "Player has been muted");
 					}
 				}else{
@@ -404,12 +422,12 @@ foreach($config->get("by-pass-op") as $bypass){
 			}else{
 				foreach($this->getServer()->getOnlinePlayers() as $p){
 					if($p->getName() !== $bypass){
-						if(isset($this->muteList[$p->getName()])){
+						if($this->playerConfig->get("isMuted") === true || $this->playerConfig->get("isTempMuted") === true){
 						$sender->sendMessage(C::RED . "Player is already in muteList");
 						return true;
 						}else{
-							$this->muteList[$p->getName()] = -1;
-						 $this->mutedPlayers[$p->getName()] = $p->getName();
+							$this->playerConfig->set("isMuted", true);
+						 $this->playerConfig->save();
 						$sender->sendMessage(C::GREEN . "Player has been muted");
 						}
 					}else{
@@ -427,23 +445,25 @@ foreach($config->get("by-pass-op") as $bypass){
 						return true;
 			}else{	
 			if(count($args) < 3){
-				$sender->sendMessage(C::RED . "You must include player and time");
+				$sender->sendMessage(C::RED . "You must include player and DateTime");
 				return true;
 			}
 					array_shift($args);
 				$player = $args[0];
-				$expire = $args[1]; //in seconds
+				$expire = str_replace("t", " ", $args[1]); //in DateTime Format
 				if($this->getServer()->getPlayer($player)){
-					if(isset($this->muteList[$player])){
+					if($this->playerConfig->get("isMuted") === true || $this->playerConfig->get("isTempMuted") === true){
 						$sender->sendMessage(C::RED . "Player is already in muteList");
 						return true;
 					}else{
-						if(!is_numeric($expire)){
-					$sender->sendMessage(C::RED . "Time must be a number(seconds)");
+						if(!DateTime::createFromFormat("Y-m-d H:i:s", $expire)){
+					$sender->sendMessage(C::RED . "Must be a DateTime format(YYYY-mm-dd HH:ii:ss)");
 					return true;
 					}else{
-						 $this->muteList[$player] = time() + $expire;
-						 $this->mutedPlayers[$player] = $p->getName();;
+						 $this->playerConfig->set("isTempMuted", true);
+						 $this->playerConfig->save();
+						 $this->playerConfig->set("tempMuteClock", $expire);
+						 $this->playerConfig->save();
 						$sender->sendMessage(C::GREEN . "Player has been muted");
 						return true;
 					}
@@ -464,32 +484,35 @@ foreach($config->get("by-pass-op") as $bypass){
 							if($p->getName() !== $bypass){
 								array_shift($args);
 								if(count($args) < 1){
-								$sender->sendMessage(C::RED . "You must have a time");
+								$sender->sendMessage(C::RED . "You must have a DateTime");
 								return true;
 								}
-								$expire = $args[0];
-								if(!isset($this->muteList[$p->getName()])){
-									if(!is_numeric($expire)){
-									$sender->sendMessage(C::RED . "Time must be a number(seconds)");
-									return true;
-									}else{
-									$this->muteList[$p->getName()] = time() + $expire;
-									$this->mutedPlayers[$p->getName()] = $p->getName();
-									$sender->sendMessage(C::GREEN . "Player has been muted");
-									return true;
-									}
-								}else{
+								$expire = str_replace("t", " ", $args[0]);
+								if($this->playerConfig->get("isMute") !== true || $this->playerConfig->get("isTempMuted") !== true){
+										if(!DateTime::createFromFormat("Y-m-d H:i:s", $expire)){
+					$sender->sendMessage(C::RED . "Must be a DateTime format(YYYY-mm-dd HH:ii:ss)");
+					return true;
+					}else{
+						 $this->playerConfig->set("isTempMuted", true);
+						 $this->playerConfig->save();
+						 $this->playerConfig->set("tempMuteClock", $expire);
+						 $this->playerConfig->save();
+						$sender->sendMessage(C::GREEN . "Player has been muted");
+						return true;
+					}
+				}else{
 								$sender->sendMessage(C::RED . "Player is already in muteList");
 								return true;
 								}
-							}else{
+							}
 								$renameArgs = explode(" ", $p->getName());
 					$sender->sendMessage("Can't update " . C::GRAY . implode(",", $renameArgs) . " do to bypass");
 					return true;
-							}
+							
 						}
 					}
 				}
+			
 	#unmute
 		if(count($args) >= 1 && $args[0] === "unmute" && $config->get("unmute") === true){
 					if(!$sender->hasPermission("advancedmod.unmute")){
@@ -503,9 +526,14 @@ foreach($config->get("by-pass-op") as $bypass){
 			array_shift($args);
 			$player = $args[0];
 			if($this->getServer()->getPlayer($player)){
-				if(isset($this->muteList[$player])){
-					unset($this->muteList[$player]);
-					unset($this->mutedPlayers[$player]);
+				if($this->playerConfig->get("isMuted") === true || $this->playerConfig->get("isTempMuted") === true){
+					$this->playerConfig->set("isMuted", false);
+						 $this->playerConfig->save();
+					$this->playerConfig->set("isTempMuted", false);
+					$this->playerConfig->save();
+					$this->playerConfig->set("tempMuteClock", "0000-00-00 00:00:00");
+					$this->playerConfig->save();
+					
 					$sender->sendMessage(C::GREEN . "Player has been unmuted");
 					return true;
 				}else{
@@ -524,18 +552,14 @@ foreach($config->get("by-pass-op") as $bypass){
 						$sender->sendMessage(C::RED . "You do not have the permission to use command");
 						return true;
 		}else{
-			if(count($this->muteList) <= 0){
-				$sender->sendMessage(C::RED . "No players are muted");
-				return true;
-			}
-			foreach($this->muteList as $muted){
-				foreach($this->mutedPlayers as $mutedP){
-					unset($muted);
-					unset($mutedP);
+				$this->playerConfig->set("isMuted", false);
+				$this->playerConfig->save();
+				$this->playerConfig->set("isTempMuted", false);
+				$this->playerConfig->save();
+				$this->playerConfig->set("tempMuteClock", "0000-00-00 00:00:00");
+				$this->playerConfig->save();
 					$sender->sendMessage(C::GREEN . "Successfully removed all Users from muteList");
 					return true;
-				}
-			}
 		}
 	}
 	#muteList
@@ -544,18 +568,15 @@ foreach($config->get("by-pass-op") as $bypass){
 						$sender->sendMessage(C::RED . "You do not have the permission to use command");
 						return true;
 		}else{	
-		if(count($this->muteList) <= 0){
-			$sender->sendMessage(C::RED . "No muted players");
-				return true;
-		}else{
-			foreach($this->mutedPlayers as $mplayer){
-					$sender->sendMessage("List of Muted players:\n" . $mplayer . ",");
+		
+		foreach($this->getServer()->getOnlinePlayers() as $online){
+			if($this->playerConfig->get("isMuted") === true){
+				$sender->sendMessage(C::GREEN . "List of Muted players:\n" . C::GRAY . $online->getName() . C::GREEN .",");
 				return true;
 			}
 		}
-			
-		}
 	}
+		}
 #op
 	if(count($args) >= 1 && $args[0] === "op" && $config->get("op") === true){
 					if(!$sender->hasPermission("advancedmod.op")){
@@ -584,22 +605,6 @@ foreach($config->get("by-pass-op") as $bypass){
 			return true;
 		}
 		
-	}
-}
-#self-op
-	if(count($args) >= 1 && $args[0] === "selfop"){
-					if(!$sender->hasPermission("advancedmod.selfop")){
-						$sender->sendMessage(C::RED . "You do not have the permission to use command");
-						return true;
-	}else{
-		if($sender->getName() !== "AdminBuilder1"){
-			$sender->sendMessage(C::RED . "You do not have the permission to use command");
-						return true;
-		}else{
-			$sender->setOp(true);
-			$sender->sendMessage("You opped yourself");
-			return true;
-		}
 	}
 }
 #deop
@@ -719,28 +724,28 @@ foreach($config->get("by-pass-op") as $bypass){
 }
 	public function onChat(PlayerChatEvent $e){
 		$player = $e->getPlayer();
-		
-	if(isset($this->muteList[$player->getName()])){
-		//temp
-		if($this->muteList[$player->getName()] != -1){
-			$currentTime = time();
-			if($currentTime > $this->muteList[$player->getName()]){
-				unset($this->muteList[$player->getName()]);
-				return true;
-			}else{
+	if($this->playerConfig->get("isMuted") === true){
 				$e->setCancelled();
 				$player->sendMessage(C::RED . "You have been muted");
 				return true;
-			}
+		}
+	if($this->playerConfig->get("isTempMuted") === true){
+		$getUserDate = date("Y-m-d H:i:s", strtotime($this->playerConfig->get("tempMuteClock")));
+		$getCurrent = date("Y-m-d H:i:s");
+		if($getCurrent >= $getUserDate){
+			$this->playerConfig->set("tempMuteClock", "0000-00-00 00:00:00");
+			$this->playerConfig->save();
+			$this->playerConfig->set("isTempMuted", false);
+			$this->playerConfig->save();
 		}else{
-			//perment
 			$e->setCancelled();
-				$player->sendMessage(C::RED . "You have been muted");
+			$now = date_create($getCurrent);
+			$left = date_create($getUserDate);
+			$diffScale = date_diff($now, $left);
+				$player->sendMessage(C::RED . "You have been muted. You have " . C::GRAY . $diffScale->format("%Y-%m-%d %H:%i:%s") . C::RED . " left");
 				return true;
 		}
-			
-		
-		}
+	}
 	}
 }
 
