@@ -1,4 +1,4 @@
-# AdvancedModerator
+# AdvancedModeration
 A pocketmine plugin for Advacned Moderation that can be used for any perpose including a custom configeration, cmds, and more
 
 # How to install
