@@ -834,7 +834,71 @@ foreach($config->get("by-pass-op") as $bypass){
 			}
 		}
 	}
-
+# banIP
+	if(count($args) >= 1 && $args[0] === "banip" && $config->get("banip") === true){
+					if(!$sender->hasPermission("advancedmod.banip")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+	}else{
+		if(count($args) < 3){
+			$sender->sendMessage(C::RED . "You must have <player|ip> <reason>");
+			return true;
+		}
+		array_shift($args);
+		  $banList = $sender->getServer()->getIPBans();
+            if ($banList->isBanned($args[0])) {
+                $sender->sendMessage(C::RED . "Player|IP is already banned");
+                return true;
+            }else{
+				 $ip = filter_var($args[0], FILTER_VALIDATE_IP);
+				$player = $sender->getServer()->getPlayer($args[0]);
+				array_shift($args);
+				$reason = implode(" ", $args);
+				//get by ip
+				foreach($this->getServer()->getOnlinePlayers() as $onlineplayers){
+					if($onlineplayers->getAddress() === $ip){
+						$banList->addBan($ip, $reason, null, $sender->getName());
+						$onlineplayers->kick("You have been IP banned", false);
+						$this->getServer()->broadcastMessage(C::RED . "IP: " . $ip . " has been banned");
+						return true;
+					}
+				}
+				//get by username
+				//$getUserIp = $player->getAddress();
+				if(!$player){
+					$sender->sendMessage(C::RED . "Player not found!");
+                return true;
+				}else{
+					$getPlayerIP = $player->getAddress();
+					$banList->addBan($getPlayerIP, $reason, null, $sender->getName());
+					$player->kick("You have been IP banned", false);
+					$this->getServer()->broadcastMessage(C::RED . "IP: " . $ip . " has been banned");
+						return true;
+				}
+			}
+			
+		}
+	}
+# unbanip
+	if(count($args) >= 1 && $args[0] === "unbanip" && $config->get("unbanip") === true){
+					if(!$sender->hasPermission("advancedmod.unbanip")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+	}else{
+		if(count($args) < 2){
+			$sender->sendMessage(C::RED . "You must have <player|ip>");
+			return true;
+		}
+		array_shift($args);
+		$banList = $sender->getServer()->getIPBans();
+            if (!$banList->isBanned($args[0])) {
+                $sender->sendMessage(C::RED . "Player|IP is not banned");
+                return true;
+            }else{
+				$banList->remove($args[0]);
+			}
+		}
+	}
 			
 	}
 }

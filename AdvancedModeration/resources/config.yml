@@ -17,13 +17,13 @@ announce: true
 pmsg: true
 # ban
 ban: true # /advancedmod ban <player> <reason>
-banip: true
-unban: true
-unbanip: true
+banip: true # /advancedmod banip <player|ip>
+unban: true  # /advancedmod unban <player>
+unbanip: true # /advancedmod unbanip <ip>
 banlist: true # /advancedmod banlist
 tban: true # /advancedmod tban <player> <expire> <reason>
 banall: true # /advancedmod banall <reason>
-tbanall: true # /advancedmod tbanall <expire> <reason>
+
 
 # kick
 kick: true # /advancedmod kick <player> <reason>
