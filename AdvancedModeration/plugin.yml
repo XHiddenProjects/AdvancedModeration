@@ -3,7 +3,7 @@ main: AdminBuilder1\AdvancedModeration\advancedmoderation
 description: A better way to moderatate your server
 website: https://github.com/surveybuilderteams/AdvancedModerator
 api: [3.22.0, 3.22.1]
-version: 1.0.6
+version: 1.0.7
   
 commands:
     advancedmod:
@@ -12,6 +12,9 @@ commands:
         aliases: [advmod]
         
 permissions:
+   advancedmod.allow:
+    description: "Allows Plugin OP to enable/disable the actions from the plugin"
+    default: notop
    advancedmod.command:
     description: "starts the AdvancedModeration commands"
     default: op
@@ -80,4 +83,13 @@ permissions:
     default: op
    advancedmod.deopall:
     description: "allows you to deop all users"
+    default: op
+   advancedmod.banlist:
+    description: "allows you to display the list of banned players"
+    default: op
+   advancedmod.ban:
+    description: "allows you to ban player"
+    default: op
+   advancedmod.unban:
+    description: "allows you to unban player"
     default: op

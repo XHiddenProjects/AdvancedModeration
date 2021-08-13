@@ -8,6 +8,7 @@ username: administrator
 #encode BASE64 username/messages
 encode-username: false
 encode-messages: false
+color-code: "&" #replaces any '§' with any key code
 
 version: 1 # do not change
 
@@ -16,10 +17,14 @@ announce: true
 pmsg: true
 # ban
 ban: true # /advancedmod ban <player> <reason>
+banip: true
+unban: true
+unbanip: true
 banlist: true # /advancedmod banlist
 tban: true # /advancedmod tban <player> <expire> <reason>
 banall: true # /advancedmod banall <reason>
 tbanall: true # /advancedmod tbanall <expire> <reason>
+
 # kick
 kick: true # /advancedmod kick <player> <reason>
 kickall: true # /advancedmod kickall <reason>
@@ -49,4 +54,6 @@ getIP: true # /advancedmod getIP <username>
 #enter username to bypass any kick/ban all 
 by-pass-op:
     - [username]
+# Enter key from logger
+access-key: [enter_key] 
 ...

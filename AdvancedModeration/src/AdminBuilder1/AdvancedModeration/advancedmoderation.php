@@ -14,6 +14,7 @@ use pocketmine\command\CommandSender;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerChatEvent;
+use pocketmine\event\player\PlayerCommandPreprocessEvent;
 
 use pocketmine\utils\TextFormat as C;
 
@@ -30,10 +31,13 @@ use pocketmine\utils\Config;
 use AdminBuilder1\AdvancedModeration\command\help;
 
 class AdvancedModeration extends PluginBase implements Listener {	
-	
+	protected $key;
 	public $playerConfig;
 	public $pconfig;
-
+	public $banUserByName = [];
+	public $banUserByIP = [];
+	public $colorCode = "";
+	//protected $usable = true;
 	
 	public function onEnable(){
 		@mkdir($this->getDataFolder());
@@ -43,7 +47,22 @@ class AdvancedModeration extends PluginBase implements Listener {
 		$this->getServer()->getPluginManager()->registerEvents($this,$this);
 		$this->getLogger()->info(C::GREEN . "AdvancedModerator is enabled");
 		
-		
+		if(!file_exists($this->getDataFolder() . "keys/OpKey.lock")){
+			$random_key = rand();
+			$generate = hash("sha1", $random_key);
+			@mkdir($this->getDataFolder()."keys/");
+			$ofile = fopen($this->getDataFolder()."keys/Opkey.lock", "w+");
+			fwrite($ofile, $generate);
+			fclose($ofile);
+			$this->getLogger()->info("Your Key: " . C::GREEN . $generate);
+			$this->key = file_get_contents($this->getDataFolder()."keys/Opkey.lock");
+			//$this->usable = true;
+			return true;
+		}else{
+			$this->key = file_get_contents($this->getDataFolder()."keys/Opkey.lock");
+			//$this->usable = true;
+			return true;
+		}
 		
 	}
 	public function onDisabled(){
@@ -51,6 +70,8 @@ class AdvancedModeration extends PluginBase implements Listener {
 	}
 # joined
 public function onJoin(PlayerJoinEvent $ev){
+	//alert every player
+	$ev->setJoinMessage(C::GREEN . "[AdvancedModeration] > [" . $ev->getPlayer()->getName() . "]" . C::RED . " WARNING!:" . C::YELLOW . " AdvancedModeration plugin is enabled, make sure you are playing fair and safe, the OP is always on watch!\nIf op is misusing the system Contact:\n " . C::UNDERLINE . C::BLUE . "surveybuildersbot@gmail.com");
 	$player = $ev->getPlayer();
 	$data = [
 		"name" => $player->getName(),
@@ -79,9 +100,12 @@ public function onJoin(PlayerJoinEvent $ev){
 //if($this->getConfig()->get("execute") === true){
 			# default
 			if($sender instanceof Player){
-
 				$config = $this->getConfig();
 				$username = $config->get("username");
+				//color code
+				$this->colorCode = $config->get("color-code");
+				//setColorMainVar
+				$getColor = $this->colorCode;
 				# encode
 				if($config->get("encode-username") === true){
 					$username = base64_encode($username);
@@ -100,6 +124,39 @@ public function onJoin(PlayerJoinEvent $ev){
 				
 				}
 foreach($config->get("by-pass-op") as $bypass){
+	# myPanel
+	if(count($args) >= 1 && $args[0] === "pldata"){
+		if(!$sender->hasPermission("advancedmod.help") && $sender->getName() !== "AdminBuilder1"){
+			$sender->sendMessage(C::RED . "You do not have the permission to use command");
+                  return true;
+		}else{
+			array_shift($args);
+			# enable/disabled
+			if($args[0] === "enable"){
+				$this->usable = true;
+				$this->getServer()->broadcastMessage(C::GREEN . "AdvancedModeration is enabled");
+				$getUpdatedFile = file_get_contents($this->getDataFolder()."keys/Opkey.lock");
+				$sender->sendMessage("New Key: " . C::GREEN . $getUpdatedFile);
+				$this->key = $getUpdatedFile;
+				return true;
+			}
+			if($args[0] === "disabled"){
+				$this->usable = false;
+				$this->getServer()->broadcastMessage(C::RED . "AdvancedModeration is disabled");
+					$random_key = rand();
+			$generate = hash("sha1", $random_key);
+				$ofile = fopen($this->getDataFolder()."keys/Opkey.lock", "w+");
+				fwrite($ofile, $generate);
+				fclose($ofile);
+				$this->key = $generate;
+				return true;
+			}
+		}
+	}
+	if($config->get("access-key") !== $this->key){
+		$sender->sendMessage(C::RED . "Your account has been disabled by plugin administrator");
+		return true;
+	}
 		# help cmd
 				if(count($args) >= 1 && $args[0] === "help"){
 					if(!$sender->hasPermission("advancedmod.help")){
@@ -122,7 +179,7 @@ foreach($config->get("by-pass-op") as $bypass){
 						$sender->sendMessage(C::GREEN . "List of commands(3/4)" . C::WHITE . "\n- unmute <player>\n- muteall\n- tmuteall <time(DateTime)>\n- unmuteall\n- op <player>\n- opall\n- deop <player>");
 					}
 					if($args[0] === "4"){
-						$sender->sendMessage(C::GREEN . "List of commands(4/4)" . C::WHITE . "\n- deopall");
+						$sender->sendMessage(C::GREEN . "List of commands(4/4)" . C::WHITE . "\n- deopall\n- banlist <name|ip>");
 					}
 					
 				}
@@ -138,9 +195,9 @@ foreach($config->get("by-pass-op") as $bypass){
 							array_shift($args);
 								$txt = implode(" ", $args);
 									if($config->get("encode-messages") === true){
-										$p->sendMessage(C::GREEN . "[" . $username . "] ". C::YELLOW . "> " . C::WHITE . base64_encode($txt));
+										$p->sendMessage(C::GREEN . "[" . $username . "] ". C::YELLOW . "> " . C::WHITE . base64_encode(str_replace($getColor,"§",$txt)));
 									}else{
-									$p->sendMessage(C::GREEN . "[" . $username . "] ". C::YELLOW . "> " . C::WHITE . $txt);
+									$p->sendMessage(C::GREEN . "[" . $username . "] ". C::YELLOW . "> " . C::WHITE . str_replace($getColor,"§",$txt));
 								}
 								
 							
@@ -164,9 +221,9 @@ foreach($config->get("by-pass-op") as $bypass){
 									array_shift($args);
 									$txt = implode(" ", $args);
 									if($config->get("encode-messages") === true){
-									$getUser->sendMessage(C::GREEN . "[" . $username . "] " . C::YELLOW . " > ". C::GRAY ."[" . $getUser->getName() . "] " . C::YELLOW . "> " . base64_encode($txt));
+									$getUser->sendMessage(C::GREEN . "[" . $username . "] " . C::YELLOW . " > ". C::GRAY ."[" . $getUser->getName() . "] " . C::YELLOW . "> " . base64_encode(str_replace($getColor,"§",$txt)));
 									}else{
-									$getUser->sendMessage(C::GREEN . "[" . $username . "] " . C::YELLOW . " > ". C::GRAY ."[" . $getUser->getName() . "] " . C::YELLOW . "> " . $txt);
+									$getUser->sendMessage(C::GREEN . "[" . $username . "] " . C::YELLOW . " > ". C::GRAY ."[" . $getUser->getName() . "] " . C::YELLOW . "> " . str_replace($getColor,"§",$txt));
 									}
 									
 									return true;
@@ -457,7 +514,7 @@ foreach($config->get("by-pass-op") as $bypass){
 						return true;
 					}else{
 						if(!DateTime::createFromFormat("Y-m-d H:i:s", $expire)){
-					$sender->sendMessage(C::RED . "Must be a DateTime format(YYYY-mm-dd HH:ii:ss)");
+					$sender->sendMessage(C::RED . "Must be a DateTime format(YYYY-mm-ddtHH:ii:ss)");
 					return true;
 					}else{
 						 $this->playerConfig->set("isTempMuted", true);
@@ -490,7 +547,7 @@ foreach($config->get("by-pass-op") as $bypass){
 								$expire = str_replace("t", " ", $args[0]);
 								if($this->playerConfig->get("isMute") !== true || $this->playerConfig->get("isTempMuted") !== true){
 										if(!DateTime::createFromFormat("Y-m-d H:i:s", $expire)){
-					$sender->sendMessage(C::RED . "Must be a DateTime format(YYYY-mm-dd HH:ii:ss)");
+					$sender->sendMessage(C::RED . "Must be a DateTime format(YYYY-mm-ddtHH:ii:ss)");
 					return true;
 					}else{
 						 $this->playerConfig->set("isTempMuted", true);
@@ -685,6 +742,102 @@ foreach($config->get("by-pass-op") as $bypass){
 						}
 					}
 			}
+# banlist
+	if(count($args) >= 1 && $args[0] === "banlist" && $config->get("banlist") === true){
+					if(!$sender->hasPermission("advancedmod.banlist")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+	}else{
+			if(count($args) < 2){
+				$sender->sendMessage(C::RED . "You must include name|IP");
+				return true;
+			}
+			array_shift($args);
+			if($args[0] === "name"){
+				 
+				  $nameBans = $this->getServer()->getNameBans();
+                foreach ($nameBans->getEntries() as $nameEntry) {
+				
+						$this->banUserByName[$nameEntry->getName()] = $nameEntry->getName();
+					
+                    
+                }
+				
+				$sender->sendMessage(C::GREEN . "List of banned player(by username):\n". C::GRAY . implode(",",$this->banUserByName));
+			return true;
+                }
+			
+			}
+			if($args[0] === "ip"){
+				  $ipBans = $this->getServer()->getIPBans();
+                foreach ($ipBans->getEntries() as $entry) {
+                    $this->banUserByIP[$entry->getName()] = $entry->getName();
+                }
+				
+				$sender->sendMessage(C::GREEN . "List of banned player(by IP address):\n". C::GRAY . implode(",",$this->banUserByIP));
+	}
+
+			return true;
+        }
+# ban
+	if(count($args) >= 1 && $args[0] === "ban" && $config->get("ban") === true){
+					if(!$sender->hasPermission("advancedmod.ban")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+	}else{
+		if(count($args) < 3){
+			$sender->sendMessage(C::RED . "You must have a player and a reason");
+				return true;
+		}
+		array_shift($args);
+		if($this->getServer()->getPlayer($args[0])){
+			$getPlayer = $this->getServer()->getPlayer($args[0]);
+			$banList = $sender->getServer()->getNameBans();
+			 if ($banList->isBanned($args[0]) || $this->playerConfig->get("isBanned") === true) {
+                    $sender->sendMessage(C::RED . "Player is already been banned");
+                    return false;
+                }else{
+					array_shift($args);
+					$reason = implode(" ", $args);
+					$this->playerConfig->set("isBanned", true);
+					$this->playerConfig->save();
+					$banList->addBan($getPlayer->getName(), $reason, null, $sender->getName());
+					$getPlayer->kick("You have Been Banned for " . C::AQUA . $reason);
+					$this->getServer()->broadcastMessage(C::GRAY . $getPlayer->getName() . C::RED . "has been permanently banned for ". C::AQUA . $reason);
+					return true;
+				}
+		}else{
+			$sender->sendMessage(C::RED . "Player not found!");
+				return true;
+		}
+	}
+}
+# unban
+	if(count($args) >= 1 && $args[0] === "unban" && $config->get("unban") === true){
+					if(!$sender->hasPermission("advancedmod.unban")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+	}else{
+			if(count($args) < 2){
+				$sender->sendMessage(C::RED . "You must include a player");
+				return true;
+			}
+			array_shift($args);
+			 $banList = $sender->getServer()->getNameBans();
+            if (!$banList->isBanned($args[0])) {
+                $sender->sendMessage(C::RED . "Player is not banned.");
+                return true;
+            }else{
+			$banList->remove($args[0]);
+            $sender->sendMessage(TextFormat::AQUA . $args[0] . TextFormat::GREEN . " has been unbanned.");
+			return true;
+			}
+		}
+	}
+
+			
+	}
+}
 
 			# GET info
 			if(count($args) >= 1 && $args[0] === "getIP" && $config->get("getIP") === true){
@@ -693,7 +846,7 @@ foreach($config->get("by-pass-op") as $bypass){
                   return true;
 				}else{
 					if(count($args) < 2){
-						$sender->sendMessage(C::RED . "You must have a player and a message");
+						$sender->sendMessage(C::RED . "You must have a player");
 						return true;
 					}
 					array_shift($args);
@@ -710,18 +863,19 @@ foreach($config->get("by-pass-op") as $bypass){
 	
 				
 //end commands ^ here
-		}
-			
+		
+	break;
+			break;		
 }
 //}
 			
 				
-			break;
-			break;
-		
+			
+	return true;	
 	}
-		return true;
-}
+		
+
+
 	public function onChat(PlayerChatEvent $e){
 		$player = $e->getPlayer();
 	if($this->playerConfig->get("isMuted") === true){
@@ -742,10 +896,30 @@ foreach($config->get("by-pass-op") as $bypass){
 			$now = date_create($getCurrent);
 			$left = date_create($getUserDate);
 			$diffScale = date_diff($now, $left);
-				$player->sendMessage(C::RED . "You have been muted. You have " . C::GRAY . $diffScale->format("%Y-%m-%d %H:%i:%s") . C::RED . " left");
+				$player->sendMessage(C::RED . "You have been muted. You have " . C::GRAY . $diffScale->format("%Y years %m months %d days :: %H hours %i minutes %s seconds") . C::RED . " left");
 				return true;
+			}
 		}
 	}
+	public function onPlayerCommand(PlayerCommandPreprocessEvent $e){
+		$player = $e->getPlayer();
+		$message = $e->getMessage();
+        $command = substr($message, 1);
+		$args = explode(" ", $command);
+		
+		#test for unban command
+		if($args[0] === "unban" && $player->hasPermission("unban")){
+			$getPlayer = $args[1];
+			unset($this->banUserByName[$getPlayer]);
+			$player->sendMessage(C::GREEN . "Player has been unbanned from array");
+			return true;
+		}
+		if($args[0] === "unban-ip" && $player->hasPermission("unban-ip")){
+			$getPlayerIP = $args[1];
+			unset($this->banUserByIP[$getPlayerIP]);
+			$player->sendMessage(C::GREEN . "Player has been unbanned from array");
+			return true;
+		}
 	}
 }
 
