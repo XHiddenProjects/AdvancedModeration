@@ -80,8 +80,6 @@ public function onJoin(PlayerJoinEvent $ev){
 		"isOnline" => $player->isOnline() ? true : false,
 		"isMuted" => false,
 		"isTempMuted" => false,
-		"isBanned" => false,
-		"isTempBanned" => false,
 		"tempMuteClock" => "0000-00-00 00:00:00",
 		"tempBanClock" => "0000-00-00 00:00:00"
 	];
@@ -169,17 +167,20 @@ foreach($config->get("by-pass-op") as $bypass){
 					}
 					array_shift($args);
 					if($args[0] === "1"){
-					$sender->sendMessage(C::GREEN . "List of commands(1/4):" . C::WHITE . "\n- help <pg>\n- annouce <msg>\n- pmsg <player> <msg>\n- getIP <player>\n- gm <mode> <target>\n- gmall <mode>\n- tpto <player>");
+					$sender->sendMessage(C::GREEN . "List of commands(1/5):" . C::WHITE . "\n- help <pg>\n- annouce <msg>\n- pmsg <player> <msg>\n- getIP <player>\n- gm <mode> <target>\n- gmall <mode>\n- tpto <player>");
 					return true;	
 					}
 					if($args[0] === "2"){
-						$sender->sendMessage(C::GREEN . "List of commands(2/4):" . C::WHITE . "\n- kick <player> <reason>\n- kickall <reason>\n- vanish <show|hide|visable|hidden>\n- fly <enable|diabled>\n- mute <player>\n- tmute <player> <time(DateTime)>\n- mutelist");
+						$sender->sendMessage(C::GREEN . "List of commands(2/5):" . C::WHITE . "\n- kick <player> <reason>\n- kickall <reason>\n- vanish <show|hide|visable|hidden>\n- fly <enable|diabled>\n- mute <player>\n- tmute <player> <time(DateTime)>\n- mutelist");
 					}
 					if($args[0] === "3"){
-						$sender->sendMessage(C::GREEN . "List of commands(3/4)" . C::WHITE . "\n- unmute <player>\n- muteall\n- tmuteall <time(DateTime)>\n- unmuteall\n- op <player>\n- opall\n- deop <player>");
+						$sender->sendMessage(C::GREEN . "List of commands(3/5)" . C::WHITE . "\n- unmute <player>\n- muteall\n- tmuteall <time(DateTime)>\n- unmuteall\n- op <player>\n- opall\n- deop <player>");
 					}
 					if($args[0] === "4"){
-						$sender->sendMessage(C::GREEN . "List of commands(4/4)" . C::WHITE . "\n- deopall\n- banlist <name|ip>");
+						$sender->sendMessage(C::GREEN . "List of commands(4/5)" . C::WHITE . "\n- deopall\n- banlist <name|ip>\n- ban <player> <reason>\n- unban <player>\n- banip <name|ip> <reason>\n- unbanip <ip>\n- warn <player> <msg>");
+					}
+					if($args[0] === "5"){
+						$sender->sendMessage(C::GREEN . "List of commands(5/5)" . C::WHITE . "\n- warnall <msg>\n- tban <player> <expire> <reason>");
 					}
 					
 				}
@@ -793,14 +794,12 @@ foreach($config->get("by-pass-op") as $bypass){
 		if($this->getServer()->getPlayer($args[0])){
 			$getPlayer = $this->getServer()->getPlayer($args[0]);
 			$banList = $sender->getServer()->getNameBans();
-			 if ($banList->isBanned($args[0]) || $this->playerConfig->get("isBanned") === true) {
+			 if ($banList->isBanned($args[0])) {
                     $sender->sendMessage(C::RED . "Player is already been banned");
                     return false;
                 }else{
 					array_shift($args);
 					$reason = implode(" ", $args);
-					$this->playerConfig->set("isBanned", true);
-					$this->playerConfig->save();
 					$banList->addBan($getPlayer->getName(), $reason, null, $sender->getName());
 					$getPlayer->kick("You have Been Banned for " . C::AQUA . $reason);
 					$this->getServer()->broadcastMessage(C::GRAY . $getPlayer->getName() . C::RED . "has been permanently banned for ". C::AQUA . $reason);
@@ -899,7 +898,118 @@ foreach($config->get("by-pass-op") as $bypass){
 			}
 		}
 	}
+# warn
+	if(count($args) >= 1 && $args[0] === "warn" && $config->get("warn") === true){
+					if(!$sender->hasPermission("advancedmod.warn")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+	}else{
+		if(count($args) < 3){
+			$sender->sendMessage(C::RED . "You must have a player and a message");
+			return true;
+		}
+		array_shift($args);
+		if($this->getServer()->getPlayer($args[0])){
+			$player = $this->getServer()->getPlayer($args[0]);
+			array_shift($args);
+			if($config->get("encode-messages") === true){
+			$note = implode(" ", $args);
+			$player->sendMessage(C::RED . base64_encode($note));
+			return true;
+			}else{
+			$note = implode(" ", $args);
+			$player->sendMessage(C::RED . $note);
+			return true;	
+			}
 			
+		}else{
+			$sender->sendMessage(C::RED . "Player not found!");
+			return true;
+		}
+		
+		}
+	}	
+# warnall
+	if(count($args) >= 1 && $args[0] === "warnall" && $config->get("warnall") === true){
+					if(!$sender->hasPermission("advancedmod.warn")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+	}else{
+		if(count($args) < 2){
+			$sender->sendMessage(C::RED . "You must have a message");
+			return true;
+		}
+		//array_shift($args);
+		
+			foreach($this->getServer()->getOnlinePlayers() as $onlinePlayers){
+				array_shift($args);
+			if($config->get("encode-messages") === true){
+			$note = implode(" ", $args);
+			$onlinePlayers->sendMessage(C::RED . base64_encode($note));
+			return true;
+			}else{
+			$note = implode(" ", $args);
+			$onlinePlayers->sendMessage(C::RED . $note);
+			return true;	
+			}
+			}
+			
+			
+		
+		
+		}
+	}
+# tban
+	if(count($args) >= 1 && $args[0] === "tban" && $config->get("tban") === true){
+					if(!$sender->hasPermission("advancedmod.tban")){
+						$sender->sendMessage(C::RED . "You do not have the permission to use command");
+						return true;
+	}else{
+		if(count($args) < 4){
+			$sender->sendMessage(C::RED . "You must include player, expire, and reason");
+			return true;
+		}
+		array_shift($args);
+		if($this->getServer()->getPlayer($args[0])){
+			//player
+			$player = $this->getServer()->getPlayer($args[0]);
+			array_shift($args);
+			//expires
+			$expire = str_replace("t", " ", $args[0]);
+			if(!DateTime::createFromFormat("Y-m-d H:i:s", $expire)){
+					$sender->sendMessage(C::RED . "Must be a DateTime format(YYYY-mm-ddtHH:ii:ss)");
+					return true;
+				}else{
+					$Defexpire = DateTime::createFromFormat("Y-m-d H:i:s", $expire);
+					//reason
+			array_shift($args);
+			$reason = implode(" ", $args);
+			//server
+			$banList = $sender->getServer()->getNameBans();
+				if($banList->isBanned($player)){
+					$sender->sendMessage(C::RED . "Player is already banned");
+					return true;
+				}else{
+					$getUserDate = date("Y-m-d H:i:s", strtotime($expire));
+					$getCurrent = date("Y-m-d H:i:s");
+					//create
+					$now = date_create($getUserDate);
+					$left = date_create($getCurrent);
+					$diffScale = date_diff($now, $left);
+					
+					$banList->addBan($player->getName(), $reason, $Defexpire, $sender->getName());
+					$player->kick("You have been temporarily banned for " . C::GREEN . $reason 
+					. C::WHITE . ", your ban will expire in " . C::GRAY . $diffScale->format("%Y years %m months %d days :: %H hours %i minutes %s seconds"));
+					$this->getServer()->broadcastMessage("User ". $player->getName() . "is banned for " . C::GREEN . $diffScale->format("%Y years %m months %d days :: %H hours %i minutes %s seconds"));
+					return true;
+				}
+				}
+		}else{
+			$sender->sendMessage(C::RED . "Player not found!");
+			return true;
+		}
+	}
+}	
 	}
 }
 
@@ -965,7 +1075,7 @@ foreach($config->get("by-pass-op") as $bypass){
 			}
 		}
 	}
-	public function onPlayerCommand(PlayerCommandPreprocessEvent $e){
+	/*public function onPlayerCommand(PlayerCommandPreprocessEvent $e){
 		$player = $e->getPlayer();
 		$message = $e->getMessage();
         $command = substr($message, 1);
@@ -984,7 +1094,7 @@ foreach($config->get("by-pass-op") as $bypass){
 			$player->sendMessage(C::GREEN . "Player has been unbanned from array");
 			return true;
 		}
-	}
+	}*/
 }
 
  

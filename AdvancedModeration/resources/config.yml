@@ -23,11 +23,11 @@ unbanip: true # /advancedmod unbanip <ip>
 banlist: true # /advancedmod banlist
 tban: true # /advancedmod tban <player> <expire> <reason>
 banall: true # /advancedmod banall <reason>
-
-
 # kick
 kick: true # /advancedmod kick <player> <reason>
 kickall: true # /advancedmod kickall <reason>
+warn: true # /advancedmod warn <player> <msg>
+warnall: true # /advancedmod warnall <msg>
 # mute
 mute: true # /advancedmod mute <player>
 mutelist: true # /advancedmod mutelist

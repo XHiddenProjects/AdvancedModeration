@@ -3,7 +3,7 @@ main: AdminBuilder1\AdvancedModeration\advancedmoderation
 description: A better way to moderatate your server
 website: https://github.com/surveybuilderteams/AdvancedModerator
 api: [3.22.0, 3.22.1]
-version: 1.0.8
+version: 1.0.9
   
 commands:
     advancedmod:
@@ -98,4 +98,10 @@ permissions:
     default: op 
    advancedmod.unbanip:
     description: "allows you to unban player ip"
+    default: op
+   advancedmod.warn:
+    description: "allows you to warn a player"
+    default: op
+   advancedmod.tban:
+    description: "allows you to temp. ban players"
     default: op
