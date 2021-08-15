@@ -71,7 +71,10 @@ class AdvancedModeration extends PluginBase implements Listener {
 # joined
 public function onJoin(PlayerJoinEvent $ev){
 	//alert every player
-	$ev->setJoinMessage(C::GREEN . "[AdvancedModeration] > [" . $ev->getPlayer()->getName() . "]" . C::RED . " WARNING!:" . C::YELLOW . " AdvancedModeration plugin is enabled, make sure you are playing fair and safe, the OP is always on watch!\nIf op is misusing the system Contact:\n " . C::UNDERLINE . C::BLUE . "surveybuildersbot@gmail.com");
+	
+		//$ev->setJoinMessage(C::GREEN . "[AdvancedModeration] > [" . $ev->getPlayer()->getName() . "]" . C::RED . " WARNING!:" . C::YELLOW . " AdvancedModeration plugin is enabled, make sure you are playing fair and safe, the OP is always on watch!\nIf op is misusing the system Contact:\n " . C::UNDERLINE . C::BLUE . "surveybuildersbot@gmail.com");
+	
+	
 	$player = $ev->getPlayer();
 	$data = [
 		"name" => $player->getName(),

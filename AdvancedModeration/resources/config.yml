@@ -10,6 +10,7 @@ encode-username: false
 encode-messages: false
 color-code: "&" #replaces any '§' with any key code
 
+
 version: 1 # do not change
 
 # messages

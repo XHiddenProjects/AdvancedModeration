@@ -3,7 +3,7 @@ main: AdminBuilder1\AdvancedModeration\advancedmoderation
 description: A better way to moderatate your server
 website: https://github.com/surveybuilderteams/AdvancedModerator
 api: [3.22.0, 3.22.1]
-version: 1.0.9
+version: 1.0.10
   
 commands:
     advancedmod:
